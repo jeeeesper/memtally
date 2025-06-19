@@ -19,7 +19,7 @@ This enables constant-time estimation of memory usage, without the need to again
 To use MemTally, wrap your collection with `Tracked<C>`. Elements must implement the `HeapSize` trait.
 
 ```rust
-use memtally::{Tracked, HeapSize};
+use memtally::{HeapSize, Tracked};
 use std::collections::HashSet;
 
 // Example element type implementing HeapSize
@@ -34,8 +34,10 @@ impl HeapSize for Item {
     }
 }
 
-let mut set = Tracked::new(HashSet::new());
-set.insert(Item { data: "hello".into() });
+let mut set = Tracked::from(HashSet::new());
+set.insert(Item {
+    data: "hello".into(),
+});
 
 println!("Total heap usage: {} bytes", set.heap_size());
 ```
