@@ -1,0 +1,13 @@
+[package]
+name = "memtally"
+version = "0.1.0"
+edition = "2024"
+description = "A wrapper for some collection types that keeps track of indirectly allocated heap memory"
+license = "MIT"
+readme = "README.md"
+
+[dependencies]
+cfg-if = "1.0.1"
+get-size = { version = "0.1.4", optional = true }
+get-size2 = { version = "0.4.1", optional = true }
+memuse = { version = "0.2.2", optional = true }
