@@ -96,6 +96,11 @@ where
             .get_mut(key)
             .map(|v| TrackedValue::new(&mut self.indirect_heap_memory, v))
     }
+
+    pub fn clear(&mut self) {
+        self.indirect_heap_memory = 0;
+        self.inner.clear();
+    }
 }
 
 impl<K, V, S: BuildHasher> From<HashMap<K, V, S>> for Tracked<HashMap<K, V, S>>

@@ -1,7 +1,7 @@
 mod impls;
 mod tracked_value;
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Debug)]
 pub struct Tracked<T> {
     inner: T,
     indirect_heap_memory: usize,

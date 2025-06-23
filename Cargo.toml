@@ -6,8 +6,13 @@ description = "A wrapper for some collection types that keeps track of indirectl
 license = "MIT"
 readme = "README.md"
 
+[features]
+binary-heap-plus = ["dep:binary-heap-plus", "dep:compare"]
+
 [dependencies]
 cfg-if = "1.0.1"
+compare = { version = "0.1", optional = true }
+binary-heap-plus = { version = "0.5.0", optional = true }
 get-size = { version = "0.1.4", optional = true }
 get-size2 = { version = "0.4.1", optional = true }
 memuse = { version = "0.2.2", optional = true }
