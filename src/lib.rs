@@ -1,7 +1,7 @@
 mod impls;
 mod tracked_value;
 
-#[derive(Default, Clone, Debug)]
+#[derive(Default, Debug, Eq)]
 pub struct Tracked<T> {
     inner: T,
     indirect_heap_memory: usize,
@@ -19,11 +19,64 @@ impl<T> Tracked<T> {
     }
 }
 
-impl<T> std::ops::Deref for Tracked<T> {
-    type Target = T;
+impl<C> std::ops::Deref for Tracked<C> {
+    type Target = C;
 
     fn deref(&self) -> &Self::Target {
         &self.inner
+    }
+}
+
+impl<C> AsRef<C> for Tracked<C> {
+    fn as_ref(&self) -> &C {
+        &self.inner
+    }
+}
+
+impl<C: PartialEq> PartialEq for Tracked<C> {
+    fn eq(&self, other: &Self) -> bool {
+        // Do not compare heap usage
+        self.inner.eq(&other.inner)
+    }
+}
+
+impl<C: PartialOrd> PartialOrd for Tracked<C> {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.inner.partial_cmp(&other.inner)
+    }
+}
+
+impl<C: Ord> Ord for Tracked<C> {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.inner.cmp(&other.inner)
+    }
+}
+
+// Creation
+
+impl<C, T: HeapSize> FromIterator<T> for Tracked<C>
+where
+    C: FromIterator<T>,
+{
+    fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
+        let mut indirect_heap_memory = 0;
+        let inner: C = iter
+            .into_iter()
+            .inspect(|v| indirect_heap_memory += T::heap_size(v))
+            .collect();
+        Self {
+            inner,
+            indirect_heap_memory,
+        }
+    }
+}
+
+impl<C: Extend<T>, T: HeapSize> Extend<T> for Tracked<C> {
+    fn extend<I: IntoIterator<Item = T>>(&mut self, iter: I) {
+        self.inner.extend(
+            iter.into_iter()
+                .inspect(|v| self.indirect_heap_memory += T::heap_size(v)),
+        );
     }
 }
 
@@ -54,7 +107,6 @@ impl<T: Sized + HeapSize> MemSize for T {
 }
 
 // == Compatibility layers (multiple are possible)
-
 #[cfg(feature = "get-size")]
 pub use get_size;
 #[cfg(feature = "get-size")]
