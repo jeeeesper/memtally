@@ -10,9 +10,13 @@ readme = "README.md"
 binary-heap-plus = ["dep:binary-heap-plus", "dep:compare"]
 
 [dependencies]
-cfg-if = "1.0.1"
+cfg-if = "1"
+
+# Feature `binary-heap-plus`
 compare = { version = "0.1", optional = true }
-binary-heap-plus = { version = "0.5.0", optional = true }
-get-size = { version = "0.1.4", optional = true }
-get-size2 = { version = "0.4.1", optional = true }
-memuse = { version = "0.2.2", optional = true }
+binary-heap-plus = { version = "0.5", optional = true }
+
+# Compatibility features
+get-size = { version = "0.1", optional = true }
+get-size2 = { version = "0.4", optional = true }
+memuse = { version = "0.2", optional = true }
