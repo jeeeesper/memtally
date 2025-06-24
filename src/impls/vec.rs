@@ -1,16 +1,15 @@
 use std::iter;
 
-use crate::{HeapSize, Tracked, ShallowHeapSize, tracked_value::TrackedValue};
+use crate::{
+    HeapSize, Tracked,
+    macros::{impl_clear, impl_from, impl_new, impl_shallow_heap_size},
+    tracked_value::TrackedValue,
+};
 
 impl<T> Tracked<Vec<T>>
 where
     T: HeapSize,
 {
-    #[must_use]
-    pub fn new() -> Self {
-        Self::default()
-    }
-
     pub fn push(&mut self, value: T) {
         self.indirect_heap_memory += T::heap_size(&value);
         self.inner.push(value);
@@ -34,11 +33,6 @@ where
         let value = self.inner.remove(index);
         self.indirect_heap_memory -= T::heap_size(&value);
         value
-    }
-
-    pub fn clear(&mut self) {
-        self.indirect_heap_memory = 0;
-        self.inner.clear();
     }
 
     pub fn retain<F>(&mut self, mut f: F)
@@ -126,23 +120,7 @@ where
     }
 }
 
-impl<T> From<Vec<T>> for Tracked<Vec<T>>
-where
-    T: HeapSize,
-{
-    fn from(value: Vec<T>) -> Self {
-        let indirect_heap_memory = value.iter().map(|k| T::heap_size(k)).sum();
-        Self {
-            inner: value,
-            indirect_heap_memory,
-        }
-    }
-}
-
-impl<T> ShallowHeapSize for Vec<T> {
-    fn shallow_heap_size(&self) -> usize {
-        use std::mem::size_of;
-
-        self.capacity() * size_of::<T>()
-    }
-}
+impl_new!(Vec<T>);
+impl_clear!(Vec<T>);
+impl_from!(Vec<T>, |v| T::heap_size(v));
+impl_shallow_heap_size!(Vec<T>, |v: &Self| v.capacity() * (size_of::<T>()));

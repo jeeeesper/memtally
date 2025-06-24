@@ -3,17 +3,16 @@ use std::{
     ops::Deref,
 };
 
-use crate::{HeapSize, ShallowHeapSize, Tracked, tracked_value::TrackedValue};
+use crate::{
+    HeapSize, Tracked,
+    macros::{impl_clear, impl_from, impl_new, impl_shallow_heap_size},
+    tracked_value::TrackedValue,
+};
 
 impl<T> Tracked<BinaryHeap<T>>
 where
     T: Ord + HeapSize,
 {
-    #[must_use]
-    pub fn new() -> Self {
-        Self::default()
-    }
-
     pub fn push(&mut self, item: T) {
         self.indirect_heap_memory += T::heap_size(&item);
         self.inner.push(item);
@@ -33,6 +32,11 @@ where
         })
     }
 }
+
+impl_new!(BinaryHeap<T>, T: Ord);
+impl_clear!(BinaryHeap<T>);
+impl_from!(BinaryHeap<T>, |v| T::heap_size(v));
+impl_shallow_heap_size!(BinaryHeap<T>, |v: &Self| v.capacity() * size_of::<T>());
 
 pub struct TrackedPeekMut<'a, T: 'a + Ord> {
     tracker: &'a mut usize,
@@ -55,27 +59,5 @@ impl<'a, T: 'a + Ord + HeapSize> TrackedPeekMut<'a, T> {
     pub fn pop(self) -> T {
         *self.tracker -= T::heap_size(&self.elem);
         PeekMut::pop(self.elem)
-    }
-}
-
-impl<T> From<BinaryHeap<T>> for Tracked<BinaryHeap<T>>
-where
-    T: HeapSize,
-{
-    fn from(value: BinaryHeap<T>) -> Self {
-        let indirect_heap_memory = value.iter().map(|k| T::heap_size(k)).sum();
-        Self {
-            inner: value,
-            indirect_heap_memory,
-        }
-    }
-}
-
-impl<T> ShallowHeapSize for BinaryHeap<T> {
-    fn shallow_heap_size(&self) -> usize {
-        use std::mem::size_of;
-
-        // An estimation.
-        self.capacity() * size_of::<T>()
     }
 }

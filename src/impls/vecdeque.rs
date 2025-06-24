@@ -1,17 +1,16 @@
 use std::collections::VecDeque;
 use std::iter;
 
-use crate::{HeapSize, ShallowHeapSize, Tracked, tracked_value::TrackedValue};
+use crate::{
+    HeapSize, Tracked,
+    macros::{impl_clear, impl_from, impl_new, impl_shallow_heap_size},
+    tracked_value::TrackedValue,
+};
 
 impl<T> Tracked<VecDeque<T>>
 where
     T: HeapSize,
 {
-    #[must_use]
-    pub fn new() -> Self {
-        Self::default()
-    }
-
     pub fn push_back(&mut self, value: T) {
         self.indirect_heap_memory += T::heap_size(&value);
         self.inner.push_back(value);
@@ -43,11 +42,6 @@ where
         self.inner
             .remove(index)
             .inspect(|value| self.indirect_heap_memory -= T::heap_size(value))
-    }
-
-    pub fn clear(&mut self) {
-        self.indirect_heap_memory = 0;
-        self.inner.clear();
     }
 
     pub fn retain<F>(&mut self, mut f: F)
@@ -140,23 +134,7 @@ where
     }
 }
 
-impl<T> From<VecDeque<T>> for Tracked<VecDeque<T>>
-where
-    T: HeapSize,
-{
-    fn from(value: VecDeque<T>) -> Self {
-        let indirect_heap_memory = value.iter().map(|k| T::heap_size(k)).sum();
-        Self {
-            inner: value,
-            indirect_heap_memory,
-        }
-    }
-}
-
-impl<T> ShallowHeapSize for VecDeque<T> {
-    fn shallow_heap_size(&self) -> usize {
-        use std::mem::size_of;
-
-        self.capacity() * size_of::<T>()
-    }
-}
+impl_new!(VecDeque<T>);
+impl_clear!(VecDeque<T>);
+impl_from!(VecDeque<T>, |v| T::heap_size(v));
+impl_shallow_heap_size!(VecDeque<T>, |v: &Self| v.capacity() * (size_of::<T>()));

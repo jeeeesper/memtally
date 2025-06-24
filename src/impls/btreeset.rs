@@ -1,16 +1,14 @@
 use std::{borrow::Borrow, collections::BTreeSet};
 
-use crate::{HeapSize, Tracked, ShallowHeapSize};
+use crate::{
+    HeapSize, Tracked,
+    macros::{impl_clear, impl_from, impl_new, impl_shallow_heap_size},
+};
 
 impl<T> Tracked<BTreeSet<T>>
 where
     T: Ord + HeapSize,
 {
-    #[must_use]
-    pub fn new() -> Self {
-        Self::default()
-    }
-
     pub fn insert(&mut self, key: T) -> bool {
         let key_size = T::heap_size(&key);
         if self.inner.insert(key) {
@@ -49,24 +47,8 @@ where
     }
 }
 
-impl<T> From<BTreeSet<T>> for Tracked<BTreeSet<T>>
-where
-    T: HeapSize,
-{
-    fn from(value: BTreeSet<T>) -> Self {
-        let indirect_heap_memory = value.iter().map(|k| T::heap_size(k)).sum();
-        Self {
-            inner: value,
-            indirect_heap_memory,
-        }
-    }
-}
-
-impl<T> ShallowHeapSize for BTreeSet<T> {
-    fn shallow_heap_size(&self) -> usize {
-        use std::mem::size_of;
-
-        // An estimation.
-        self.len() * (size_of::<T>() + size_of::<usize>())
-    }
-}
+impl_new!(BTreeSet<T>);
+impl_clear!(BTreeSet<T>);
+impl_from!(BTreeSet<T>, |v| T::heap_size(v));
+impl_shallow_heap_size!(BTreeSet<T>, |v: &Self| v.len()
+    * (size_of::<T>() + size_of::<usize>()));

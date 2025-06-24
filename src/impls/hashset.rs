@@ -1,17 +1,13 @@
 use std::{
     borrow::Borrow,
     collections::HashSet,
-    hash::{BuildHasher, Hash, RandomState},
+    hash::{BuildHasher, Hash},
 };
 
-use crate::{HeapSize, Tracked, ShallowHeapSize};
-
-impl<T> Tracked<HashSet<T, RandomState>> {
-    #[must_use]
-    pub fn new() -> Self {
-        Self::default()
-    }
-}
+use crate::{
+    HeapSize, Tracked,
+    macros::{impl_clear, impl_from, impl_new, impl_shallow_heap_size},
+};
 
 impl<T, S> Tracked<HashSet<T, S>>
 where
@@ -56,24 +52,8 @@ where
     }
 }
 
-impl<T, S: BuildHasher> From<HashSet<T, S>> for Tracked<HashSet<T, S>>
-where
-    T: HeapSize,
-{
-    fn from(value: HashSet<T, S>) -> Self {
-        let indirect_heap_memory = value.iter().map(|k| T::heap_size(k)).sum();
-        Self {
-            inner: value,
-            indirect_heap_memory,
-        }
-    }
-}
-
-impl<T, S> ShallowHeapSize for HashSet<T, S> {
-    fn shallow_heap_size(&self) -> usize {
-        use std::mem::size_of;
-
-        // An estimation.
-        self.capacity() * (size_of::<T>() + size_of::<usize>())
-    }
-}
+impl_new!(HashSet<T, S>, S: BuildHasher + Default);
+impl_clear!(HashSet<T, S>);
+impl_from!(HashSet<T, S>, |v| T::heap_size(v), T);
+impl_shallow_heap_size!(HashSet<T, S>, |v: &Self| v.capacity()
+    * (size_of::<T>() + size_of::<usize>()));

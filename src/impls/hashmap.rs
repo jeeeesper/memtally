@@ -1,17 +1,14 @@
 use std::{
     borrow::Borrow,
     collections::{HashMap, hash_map::Entry},
-    hash::{BuildHasher, Hash, RandomState},
+    hash::{BuildHasher, Hash},
 };
 
-use crate::{HeapSize, ShallowHeapSize, Tracked, tracked_value::TrackedValue};
-
-impl<K, V> Tracked<HashMap<K, V, RandomState>> {
-    #[must_use]
-    pub fn new() -> Self {
-        Self::default()
-    }
-}
+use crate::{
+    HeapSize, Tracked,
+    macros::{impl_clear, impl_from, impl_new, impl_shallow_heap_size},
+    tracked_value::TrackedValue,
+};
 
 impl<K, V, S> Tracked<HashMap<K, V, S>>
 where
@@ -96,29 +93,12 @@ where
             .get_mut(key)
             .map(|v| TrackedValue::new(&mut self.indirect_heap_memory, v))
     }
-
-    pub fn clear(&mut self) {
-        self.indirect_heap_memory = 0;
-        self.inner.clear();
-    }
 }
 
-impl<K, V, S: BuildHasher> From<HashMap<K, V, S>> for Tracked<HashMap<K, V, S>>
-where
-    K: HeapSize,
-    V: HeapSize,
-{
-    fn from(value: HashMap<K, V, S>) -> Self {
-        let indirect_heap_memory = value
-            .iter()
-            .map(|(k, v)| K::heap_size(k) + V::heap_size(v))
-            .sum();
-        Self {
-            inner: value,
-            indirect_heap_memory,
-        }
-    }
-}
+impl_new!(HashMap<K, V, S>, S: BuildHasher + Default);
+impl_clear!(HashMap<K, V, S>);
+impl_from!(HashMap<K, V, S>, |(k, v)| K::heap_size(k) + V::heap_size(v), K, V);
+impl_shallow_heap_size!(HashMap<K, V, S>, |v: &Self| v.capacity() * (size_of::<K>() + size_of::<V>() + size_of::<usize>()));
 
 pub enum TrackedEntry<'a, K, V> {
     Occupied(TrackedOccupiedEntry<'a, K, V>),
@@ -180,14 +160,5 @@ where
         let v_size = V::heap_size(&value);
         *self.tracker += k_size + v_size;
         self.entry.insert(value)
-    }
-}
-
-impl<K, V, S> ShallowHeapSize for HashMap<K, V, S> {
-    fn shallow_heap_size(&self) -> usize {
-        use std::mem::size_of;
-
-        // An estimation.
-        self.capacity() * (size_of::<K>() + size_of::<V>() + size_of::<usize>())
     }
 }

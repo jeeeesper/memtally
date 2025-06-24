@@ -3,7 +3,11 @@ use std::{
     collections::{BTreeMap, btree_map::Entry},
 };
 
-use crate::{HeapSize, ShallowHeapSize, Tracked, tracked_value::TrackedValue};
+use crate::{
+    HeapSize, Tracked,
+    macros::{impl_clear, impl_from, impl_new, impl_shallow_heap_size},
+    tracked_value::TrackedValue,
+};
 
 impl<K, V> Tracked<BTreeMap<K, V>>
 where
@@ -77,7 +81,13 @@ where
             }
         }
     }
+}
 
+impl<K, V> Tracked<BTreeMap<K, V>>
+where
+    K: Ord,
+    V: HeapSize,
+{
     pub fn get_mut<Q>(&mut self, key: &Q) -> Option<TrackedValue<'_, V>>
     where
         K: Borrow<Q>,
@@ -89,22 +99,10 @@ where
     }
 }
 
-impl<K, V> From<BTreeMap<K, V>> for Tracked<BTreeMap<K, V>>
-where
-    K: HeapSize,
-    V: HeapSize,
-{
-    fn from(value: BTreeMap<K, V>) -> Self {
-        let indirect_heap_memory = value
-            .iter()
-            .map(|(k, v)| K::heap_size(k) + V::heap_size(v))
-            .sum();
-        Self {
-            inner: value,
-            indirect_heap_memory,
-        }
-    }
-}
+impl_new!(BTreeMap<K, V>);
+impl_clear!(BTreeMap<K, V>);
+impl_from!(BTreeMap<K, V>, |(k, v)| K::heap_size(k) + V::heap_size(v));
+impl_shallow_heap_size!(BTreeMap<K, V>, |v: &Self| v.len() * (size_of::<K>() + size_of::<V>() + size_of::<usize>()));
 
 pub enum TrackedEntry<'a, K, V> {
     Occupied(TrackedOccupiedEntry<'a, K, V>),
@@ -166,14 +164,5 @@ where
         let v_size = V::heap_size(&value);
         *self.tracker += k_size + v_size;
         self.entry.insert(value)
-    }
-}
-
-impl<K, V> ShallowHeapSize for BTreeMap<K, V> {
-    fn shallow_heap_size(&self) -> usize {
-        use std::mem::size_of;
-
-        // An estimation.
-        self.len() * (size_of::<K>() + size_of::<V>() + size_of::<usize>())
     }
 }
