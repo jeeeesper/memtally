@@ -1,10 +1,11 @@
 [package]
 name = "memtally"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 description = "A wrapper for some collection types that keeps track of indirectly allocated heap memory"
 license = "MIT"
 readme = "README.md"
+documentation = "https://docs.rs/memtally/latest/memtally/"
 
 [features]
 binary-heap-plus = ["dep:binary-heap-plus", "dep:compare"]

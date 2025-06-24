@@ -37,7 +37,7 @@ checksum = "414adb79ae400f95c20f60c851e9ae53d9043ec6e8cc4afa85e20b74874249e5"
 
 [[package]]
 name = "memtally"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "binary-heap-plus",
  "cfg-if",
