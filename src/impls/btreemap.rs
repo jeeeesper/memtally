@@ -15,25 +15,17 @@ where
     V: HeapSize,
 {
     pub fn insert(&mut self, key: K, value: V) -> Option<V> {
+        self.indirect_heap_memory += V::heap_size(&value);
         match self.inner.entry(key) {
             Entry::Occupied(mut o) => {
-                let old_v = o.get_mut();
-                let old_size = V::heap_size(old_v);
-                let new_size = V::heap_size(&value);
-
-                self.indirect_heap_memory -= old_size;
-                self.indirect_heap_memory += new_size;
-
-                // key is not updated
-
-                Some(std::mem::replace(old_v, value))
+                // Subtract old value
+                self.indirect_heap_memory -= V::heap_size(o.get());
+                let old = o.insert(value);
+                Some(old)
             }
             Entry::Vacant(v) => {
-                let k = v.key();
-                let k_size = K::heap_size(k);
-                let v_size = V::heap_size(&value);
-
-                self.indirect_heap_memory += k_size + v_size;
+                // Add key
+                self.indirect_heap_memory += K::heap_size(v.key());
                 v.insert(value);
                 None
             }
@@ -140,7 +132,10 @@ where
         old_value
     }
 
-    #[allow(clippy::must_use_candidate)]
+    #[allow(
+        clippy::must_use_candidate,
+        reason = "Mostly executed for side effects"
+    )]
     pub fn remove(self) -> V {
         let key_size = K::heap_size(self.entry.key());
         let val_size = V::heap_size(self.entry.get());
