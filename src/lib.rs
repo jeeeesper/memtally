@@ -81,6 +81,22 @@ impl<C: Extend<T>, T: HeapSize> Extend<T> for Tracked<C> {
     }
 }
 
+impl<C, T> Clone for Tracked<C>
+where
+    C: Clone,
+    for<'a> &'a C: IntoIterator<Item = &'a T>,
+    T: HeapSize,
+{
+    fn clone(&self) -> Self {
+        let inner = self.inner.clone();
+        let indirect_heap_memory = (&inner).into_iter().map(|v| T::heap_size(v)).sum();
+        Self {
+            inner,
+            indirect_heap_memory,
+        }
+    }
+}
+
 /// Used for containers to report what they allocate themselves, but not
 /// their elements. For example, a `Vec<T>` with capacity 16 allocates `16 *
 /// std::mem::size_of::<T>()` directly. But whatever the elements of type `T`
