@@ -1,6 +1,6 @@
 [package]
 name = "memtally"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2024"
 description = "A wrapper for some collection types that keeps track of indirectly allocated heap memory"
 license = "MIT"
